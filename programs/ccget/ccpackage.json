@@ -1,7 +1,7 @@
 {
     "name": "ccget",
     "description": "A package manager for computer craft!",
-    "version": "v0.1.0",
+    "version": "0.1.0",
     "author": "ajh123",
     "license": {
         "spdx_id": "EPL-2.0"
