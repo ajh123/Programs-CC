@@ -11,8 +11,8 @@
 
   (site
     (title "ajh123 programs")
-    (url https://ajh123.github.io/PROGRAMS-CC/)
-    (source-link https://github.com/ajh123/PROGRAMS-CC/blob/${commit}/${path}#L${line})
+    (url https://ajh123.github.io/Programs-CC/)
+    (source-link https://github.com/ajh123/Programs-CC/blob/${commit}/${path}#L${line})
 
     (head doc/head.html)
   )

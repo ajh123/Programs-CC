@@ -1,5 +1,31 @@
 --[[-
-The ccget package manager
+# The ccget package manager.
+
+A simple computercraft package manager!
+
+## Installing ccget
+
+```bash
+wget https://github.com/ajh123/Programs-CC/raw/main/programs/ccget/main.lua ccget.lua
+```
+
+## Installing a package
+```bash
+ccget install <package name>
+```
+
+## Removing a package
+```bash
+ccget install <package name>
+```
+
+## Searching for packages
+```bash
+ccget seach <search entry>
+```
+
+## Adding your program
+See https://ajh123.github.io/Programs-CC/guide/ccget-adding-package.html for more details.
 
 @module[kind=program] ccget
 ]]
