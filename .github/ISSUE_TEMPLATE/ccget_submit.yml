@@ -1,0 +1,25 @@
+name: CCGET | Program Submission
+description: Template for CCGET program submissions
+labels: ['ccget']
+title: '[CCGET - Submission]: '
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What does your program do?
+      description: Please describe your program below
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why do you want your program on CCGET?
+  - type: input
+    id: url
+    attributes:
+      label: Your `ccpackage.json` url
+      description: Provide a raw URL to your `ccpackage.json` file.
+      placeholder: >-
+        https://github.com/ajh123/Programs-CC/raw/main/programs/ccget/ccpackage.json
+    validations:
+      required: true
