@@ -4,7 +4,10 @@
     "version": "0.1.0",
     "author": "ajh123",
     "license": {
-        "spdx_id": "EPL-2.0"
+        "spdx_id": "EPL-2.0",
+        "name": "Eclipse Public License - v 2.0",
+        "url": "https://github.com/ajh123/Programs-CC/blob/main/LICENSE",
+        "raw_url": "https://github.com/ajh123/Programs-CC/raw/main/LICENSE"
     },
     "files": {
         "main.lua": "https://github.com/ajh123/Programs-CC/raw/main/programs/ccget/main.lua"
