@@ -1,7 +1,7 @@
 --[[-
 The test program.
 
-@module[kind=program] tert
+@module[kind=program] test
 ]]
 
 print("hi")

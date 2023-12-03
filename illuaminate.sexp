@@ -20,6 +20,7 @@
   (module-kinds
     (program Programs)
     (guide Guides)
+    (changelog Changelog)
   )
 
   (library-path
