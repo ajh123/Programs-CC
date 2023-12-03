@@ -4,7 +4,7 @@
     "version": "v0.1.0",
     "author": "ajh123",
     "license": "EPL-2.0",
-    "files": [
-        "main.lua"
-    ]
+    "files": {
+        "main.lua": "https://github.com/ajh123/Programs-CC/raw/main/programs/ccget/main.lua"
+    }
 }
