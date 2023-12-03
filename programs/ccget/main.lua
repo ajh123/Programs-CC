@@ -43,25 +43,32 @@ local function installPackage(packageName)
     local packagesList = readJSONFromRepo(packagesListUrl)
 
     if not packagesList then
+        term.setTextColour(colours.red)
         print("Failed to retrieve packages list.")
+        term.setTextColour(colours.white)
         return
     end
 
     local manifestUrl = packagesList.packages[packageName]
 
     if not manifestUrl then
+        term.setTextColour(colours.red)
         print("Package " .. packageName .. " not found in the central repository.")
+        term.setTextColour(colours.white)
         return
     end
 
     local manifest = readJSONFromRepo(manifestUrl)
 
     if not manifest then
+        term.setTextColour(colours.red)
         print("Manifest not found for " .. packageName .. ".")
+        term.setTextColour(colours.white)
         return
     end
 
     print("Installing " .. packageName .. "...")
+    local success = true
 
     for fileName, file in pairs(manifest.files) do
         local fileUrl = manifest.files[fileName]
@@ -70,12 +77,86 @@ local function installPackage(packageName)
         if downloadFile(fileUrl, destination) then
             print("  " .. fileName .. " installed.")
         else
+            term.setTextColour(colours.red)
             print("  Failed to install " .. fileName .. ".")
+            term.setTextColour(colours.white)
+            success = false
+            break
         end
     end
 
-    print(packageName .. " installed successfully.")
+    if success then
+        term.setTextColour(colours.green)
+        print(packageName .. " installed successfully.")
+        term.setTextColour(colours.white)
+    else
+        term.setTextColour(colours.red)
+        print(packageName .. " not installed successfully.")
+        term.setTextColour(colours.white)
+    end
 end
 
+-- Function to remove a package
+local function removePackage(packageName)
+    local packageDir = packagesDir .. packageName
 
-installPackage("ajh123/ccget")
+    if fs.exists(packageDir) then
+        fs.delete(packageDir)
+        term.setTextColour(colours.green)
+        print(packageName .. " removed successfully.")
+        term.setTextColour(colours.white)
+    else
+        term.setTextColour(colours.red)
+        print("Package " .. packageName .. " not found.")
+        term.setTextColour(colours.white)
+    end
+end
+
+-- Function to search for a package
+local function searchPackage(packageName)
+    local packagesListUrl = centralRepoUrl .. packagesListFile
+    local packagesList = readJSONFromRepo(packagesListUrl)
+
+    if not packagesList then
+        term.setTextColour(colours.red)
+        print("Failed to retrieve packages list.")
+        term.setTextColour(colours.white)
+        return
+    end
+
+    local found = false
+    for name, _ in pairs(packagesList.packages) do
+        if string.find(name:lower(), packageName:lower()) then
+            print("- "..name)
+            found = true
+        end
+    end
+
+    if not found then
+        term.setTextColour(colours.red)
+        print("No packages found matching '" .. packageName .. "'.")
+        term.setTextColour(colours.white)
+    end
+end
+
+-- Parse command-line arguments
+local args = {...}
+
+if #args == 0 then
+    print("Usage: ccget <install|remove|search> <packageName>")
+    return
+end
+
+local command = args[1]
+local packageName = args[2]
+
+-- Perform the requested action
+if command == "install" then
+    installPackage(packageName)
+elseif command == "remove" then
+    removePackage(packageName)
+elseif command == "search" then
+    searchPackage(packageName)
+else
+    print("Invalid command. Use 'install', 'remove', or 'search'.")
+end
