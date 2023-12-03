@@ -25,7 +25,7 @@ ccget seach <search entry>
 ```
 
 ## Adding your program
-See <https://ajh123.github.io/Programs-CC/guide/ccget-adding-package.html> for more details.
+See [https://ajh123.github.io/Programs-CC/guide/ccget-adding-package.html](https://ajh123.github.io/Programs-CC/guide/ccget-adding-package.html) for more details.
 
 @module[kind=program] ccget
 ]]
