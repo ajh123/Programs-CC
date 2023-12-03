@@ -25,7 +25,9 @@ end
 
 -- Function to read a JSON file from the repository
 local function readJSONFromRepo(url)
-    local content = http.get(url)
+    local content = http.get(url, {
+        ["Cache-Control"] = "no-cache"
+    })
     if content then
         local data = content.readAll()
         content.close()
@@ -61,14 +63,14 @@ local function installPackage(packageName)
 
     print("Installing " .. packageName .. "...")
 
-    for _, file in ipairs(manifest.files) do
-        local fileUrl = centralRepoUrl .. packageName .. "/" .. file
-        local destination = packagesDir .. packageName .. "/" .. file
+    for fileName, file in pairs(manifest.files) do
+        local fileUrl = manifest.files[fileName]
+        local destination = packagesDir .. packageName .. "/" .. fileName
 
         if downloadFile(fileUrl, destination) then
-            print("  " .. file .. " installed.")
+            print("  " .. fileName .. " installed.")
         else
-            print("  Failed to install " .. file .. ".")
+            print("  Failed to install " .. fileName .. ".")
         end
     end
 
