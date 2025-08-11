@@ -1,21 +1,18 @@
 name = basalt2
 	type = raw
-		url = https://raw.githubusercontent.com/Pyroxenium/Basalt2/main/install.lua
-		filename = basalt-install.lua
-	setup basalt-install.lua
-	cleanup rm basalt-install.lua
+		url = https://raw.githubusercontent.com/Pyroxenium/Basalt2/refs/heads/main/release/basalt.lua
+		filename = basalt.lua
 	category = api gui
 	dependencies = none
-	target = /usr/apis/
 	version = 0.1.0
-	size = 0
+	size = 1
 end
 
 name = stockmanager
 	type = raw
 		url = https://raw.githubusercontent.com/ajh123/Programs-CC/main/programs/stockmanager/stockmanager.lua
 		filename = stockmanager.lua
-	category = utility
+	category = utility storage create createmod
     dependencies = ajh123/basalt2
 	version = 0.1.0
 	size = 6343
