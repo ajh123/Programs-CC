@@ -243,6 +243,9 @@ local OrderMgr = (function ()
         height = 1
     }:onClick(function()
         local order = oWin.selectedOrder
+        if not order then
+            return
+        end
         order.status = "approved"
         redstoneRequester.request(order.items, order.address)
 
@@ -266,11 +269,19 @@ local OrderMgr = (function ()
         width = 9,
         height = 1
     }:onClick(function()
-        local idx = oWin.orderList:getSelected()
-        if not idx then return end
-        local order = oWin.orderQueue[idx]
+        local order = oWin.selectedOrder
+        if not order then
+            return
+        end
         order.status = "cancelled"
-        table.remove(oWin.orderQueue, idx)
+        -- Remove from queue
+        for idx, o in ipairs(oWin.orderQueue) do
+            if o.id == order.id then
+                table.remove(oWin.orderQueue, idx)
+                break
+            end
+        end
+        oWin.selectedOrder = nil -- Clear selection
         oWin.updateUI()
     end)
 
