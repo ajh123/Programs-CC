@@ -93,13 +93,13 @@ local Stock = (function ()
 
     -- Compare current and last snapshot, return true if different
     local function stockChanged(newSnapshot, oldSnapshot)
-        for id, count in pairs(newSnapshot) do
-            if oldSnapshot[id] ~= count then
+        for idx, item in ipairs(newSnapshot) do
+            if oldSnapshot[idx] == nil or oldSnapshot[idx].count ~= item.count then
                 return true
             end
         end
-        for id in pairs(oldSnapshot) do
-            if newSnapshot[id] == nil then
+        for idx, _ in ipairs(oldSnapshot) do
+            if newSnapshot[idx] == nil then
                 return true
             end
         end

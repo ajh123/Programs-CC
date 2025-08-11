@@ -14,8 +14,8 @@ name = stockmanager
 		filename = stockmanager.lua
 	category = utility storage create createmod
     dependencies = ajh123/basalt2
-	version = 0.1.1
-	size = 11014
+	version = 0.1.2
+	size = 11060
 end
 
 name = stocktest
