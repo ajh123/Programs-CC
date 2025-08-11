@@ -14,8 +14,18 @@ name = stockmanager
 		filename = stockmanager.lua
 	category = utility storage create createmod
     dependencies = ajh123/basalt2
-	version = 0.1.3
-	size = 11324
+	version = 0.2.0
+	size = 9303
+end
+
+name = stockserver
+	type = raw
+		url = https://raw.githubusercontent.com/ajh123/Programs-CC/main/programs/stockmanager/stockserver.lua
+		filename = stockserver.lua
+	category = utility storage create createmod
+    dependencies = none
+	version = 0.1.0
+	size = 3767
 end
 
 name = stocktest

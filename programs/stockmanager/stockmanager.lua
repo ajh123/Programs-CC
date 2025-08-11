@@ -1,18 +1,16 @@
 local basalt = require("basalt") -- Requires Basalt 2
+
 basalt.LOGGER.setEnabled(true)
 basalt.LOGGER.setLogToFile(true)
 
-local stockTicker = peripheral.find("stockcheckingblock") -- Find the Create mod Stock Ticker peripheral
-local redstoneRequester = peripheral.find("redstonerequester") -- Find the Redstone Requester peripheral
-
 rednet.open("bottom")
 local SERVICE_NAME = "stockservice"
-local SERVICE_ADDRESS = "stocksrv"
+local SERVER_ID = rednet.lookup(SERVICE_NAME)
+if not SERVER_ID then
+    error("Could not find stockservice on the network. Is it running?")
+end
+basalt.LOGGER.debug("[Rednet] GUI client ready, server ID: "..tostring(SERVER_ID))
 
-rednet.host(SERVICE_NAME, SERVICE_ADDRESS)
-basalt.LOGGER.debug("[Rednet] Server host ready")
-
--- Get the main frame (your window)
 local main = basalt.getMainFrame()
 
 function buildWindow(title)
@@ -84,48 +82,43 @@ local Stock = (function ()
     -- Helper to find item index in requestedItems by id
     local function findRequestedIndex(id)
         for idx, entry in ipairs(stockWin.requestedItems) do
-            if entry.id == id then
-                return idx
-            end
+            if entry.id == id then return idx end
         end
         return nil
     end
 
-    -- Compare current and last snapshot, return true if different
+    local function fetchStockSnapshot()
+        rednet.send(SERVER_ID, { cmd = "query" }, SERVICE_NAME)
+        local src, msg, proto = rednet.receive(SERVICE_NAME, 2)
+        if proto == SERVICE_NAME and src == SERVER_ID and type(msg) == "table" and msg.snapshot then
+            return msg.snapshot
+        end
+        return {}
+    end
+
     local function stockChanged(newSnapshot, oldSnapshot)
         for idx, item in ipairs(newSnapshot) do
-            if oldSnapshot[idx] == nil or oldSnapshot[idx].count ~= item.count then
+            if not oldSnapshot[idx] or oldSnapshot[idx].count ~= item.count then
                 return true
             end
         end
         for idx, _ in ipairs(oldSnapshot) do
-            if newSnapshot[idx] == nil then
-                return true
-            end
+            if not newSnapshot[idx] then return true end
         end
         return false
     end
 
     stockWin.updateStockList = function ()
-        local count = stockTicker.inventorySize()
-        local currentSnapshot = {}
-        for i = 1, count do
-            local item = stockTicker.itemDetails(i)
-            table.insert(currentSnapshot, { id = item.id, count = item.count })
-        end
+        local currentSnapshot = fetchStockSnapshot()
+        if not currentSnapshot or #currentSnapshot == 0 then return end
 
-        if not stockChanged(currentSnapshot, stockWin.lastStockSnapshot) then
-            -- No changes detected, skip UI update
-            return
-        end
-
+        if not stockChanged(currentSnapshot, stockWin.lastStockSnapshot) then return end
         stockWin.lastStockSnapshot = currentSnapshot
 
         stockWin.stockList:clear()
-        for i = 1, count do
-            local item = stockTicker.itemDetails(i)
+        for _, item in ipairs(currentSnapshot) do
             stockWin.stockList:addItem({
-                text = item.displayName.." (x"..item.count..")",
+                text = (item.displayName or item.id).." (x"..item.count..")",
                 callback = function()
                     local idx = findRequestedIndex(item.id)
                     if idx then
@@ -182,10 +175,13 @@ local Stock = (function ()
         end
 
         local address = stockWin.addressInput:getText()
-        redstoneRequester.request(stockWin.requestedItems, address)
-        stockWin.addressInput:setText("") -- Clear input after sending
-        stockWin.requestedItems = {} -- Clear requested items
-        stockWin.updateStockList() -- Refresh stock list to reflect changes
+        rednet.send(SERVER_ID, { cmd = "manual_request", items = stockWin.requestedItems, address = address }, SERVICE_NAME)
+        stockWin.addressInput:setText("")
+        stockWin.requestedItems = {}
+        -- Clear the stock list entirely, then force a rebuild
+        stockWin.stockList:clear()
+        stockWin.lastStockSnapshot = {} -- force updateStockList to rebuild
+        stockWin.updateStockList()
     end)
 
     stockWin:updateStockList()
@@ -197,17 +193,25 @@ end)()
 
 local OrderMgr = (function ()
     local oWin = {}
-    oWin.orderQueue = {}   -- {...{id, address, items, status}}
-    oWin.selectedOrder = nil -- Currently selected order in the order list
+    oWin.orderQueue = {}
+    oWin.selectedOrder = nil
 
     -- Helpers to render an order row
     local function orderRowText(o)
-        return string.format("[#%s] %s > %s  (items=%d)",
-            o.id, o.address, o.status, #o.items)
+        return string.format("[#%s] %s > %s  (items=%d)", o.id, o.address, o.status, #o.items)
     end
 
-    -- Update the list (rebuild it from the queue)
+    local function fetchOrderQueue()
+        rednet.send(SERVER_ID, { cmd = "orders" }, SERVICE_NAME)
+        local src, msg, proto = rednet.receive(SERVICE_NAME, 2)
+        if proto == SERVICE_NAME and src == SERVER_ID and type(msg) == "table" and msg.orders then
+            return msg.orders
+        end
+        return {}
+    end
+
     oWin.updateUI = function ()
+        oWin.orderQueue = fetchOrderQueue() or {}
         oWin.orderList:clear()
         for _,o in ipairs(oWin.orderQueue) do
             oWin.orderList:addItem{
@@ -246,18 +250,8 @@ local OrderMgr = (function ()
         if not order then
             return
         end
-        order.status = "approved"
-        redstoneRequester.request(order.items, order.address)
-
-        -- Remove from queue
-        for idx, o in ipairs(oWin.orderQueue) do
-            if o.id == order.id then
-                table.remove(oWin.orderQueue, idx)
-                break
-            end
-        end
-        oWin.selectedOrder = nil -- Clear selection
-
+        rednet.send(SERVER_ID, { cmd = "approve", orderId = order.id }, SERVICE_NAME)
+        oWin.selectedOrder = nil
         oWin.updateUI()
     end)
 
@@ -273,15 +267,8 @@ local OrderMgr = (function ()
         if not order then
             return
         end
-        order.status = "cancelled"
-        -- Remove from queue
-        for idx, o in ipairs(oWin.orderQueue) do
-            if o.id == order.id then
-                table.remove(oWin.orderQueue, idx)
-                break
-            end
-        end
-        oWin.selectedOrder = nil -- Clear selection
+        rednet.send(SERVER_ID, { cmd = "cancel", orderId = order.id }, SERVICE_NAME)
+        oWin.selectedOrder = nil
         oWin.updateUI()
     end)
 
@@ -327,53 +314,7 @@ basalt.schedule(function()
     while true do
         sleep(1)
         Stock:updateStockList()
-    end
-end)
-
-nextOrderID = 0
-basalt.schedule(function()
-    while true do
-        -- block until a packet arrives
-        local src, msg, proto = rednet.receive()
-
-        if proto ~= SERVICE_NAME then
-            basalt.LOGGER.warn("[Rednet] Unknown proto:", proto)
-            -- skip to next loop iteration (nothing else to do here)
-        else
-            if type(msg) ~= "table" then
-                basalt.LOGGER.error("[Rednet] Bad msg - not a table")
-            else
-                if msg.cmd == "query" then
-                    -- send back the latest snapshot
-                    rednet.send(src, { snapshot = Stock.lastStockSnapshot }, SERVICE_NAME)
-
-                elseif msg.cmd == "order" then
-                    -- validate the order packet
-                    if type(msg.items) ~= "table" or type(msg.address) ~= "string" then
-                        rednet.send(src, { err = "bad format" }, SERVICE_NAME)
-                    else
-                        -- create queue entry
-                        local order = {
-                            id      = nextOrderID,
-                            address = msg.address,
-                            items   = msg.items,
-                            status  = "pending"
-                        }
-                        table.insert(OrderMgr.orderQueue, order)
-                        nextOrderID = nextOrderID + 1
-
-                        basalt.LOGGER.debug("[Order] New order: "..order.id)
-
-                        OrderMgr.updateUI()
-
-                        rednet.send(src, { ok = true, orderId = order.id }, SERVICE_NAME)
-                    end
-
-                else
-                    rednet.send(src, { err = "unknown cmd" }, SERVICE_NAME)
-                end
-            end
-        end
+        OrderMgr:updateUI()
     end
 end)
 
