@@ -5,6 +5,13 @@ basalt.LOGGER.setLogToFile(true)
 local stockTicker = peripheral.find("stockcheckingblock") -- Find the Create mod Stock Ticker peripheral
 local redstoneRequester = peripheral.find("redstonerequester") -- Find the Redstone Requester peripheral
 
+rednet.open("bottom")
+local SERVICE_NAME = "stockservice"
+local SERVICE_ADDRESS = "stocksrv"
+
+rednet.host(SERVICE_NAME, SERVICE_ADDRESS)
+basalt.LOGGER.debug("[Rednet] Server host ready")
+
 -- Get the main frame (your window)
 local main = basalt.getMainFrame()
 
@@ -104,7 +111,7 @@ local Stock = (function ()
         local currentSnapshot = {}
         for i = 1, count do
             local item = stockTicker.itemDetails(i)
-            currentSnapshot[item.id] = item.count
+            table.insert(currentSnapshot, { id = item.id, count = item.count })
         end
 
         if not stockChanged(currentSnapshot, stockWin.lastStockSnapshot) then
@@ -188,6 +195,91 @@ local Stock = (function ()
     return stockWin
 end)()
 
+local OrderMgr = (function ()
+    local oWin = {}
+    oWin.orderQueue = {}   -- {...{id, address, items, status}}
+    oWin.selectedOrder = nil -- Currently selected order in the order list
+
+    -- Helpers to render an order row
+    local function orderRowText(o)
+        return string.format("[#%s] %s > %s  (items=%d)",
+            o.id, o.address, o.status, #o.items)
+    end
+
+    -- Update the list (rebuild it from the queue)
+    oWin.updateUI = function ()
+        oWin.orderList:clear()
+        for _,o in ipairs(oWin.orderQueue) do
+            oWin.orderList:addItem{
+                text = orderRowText(o),
+                callback = function()
+                    oWin.selectedOrder = o
+                    basalt.LOGGER.debug("Selected order: "..textutils.serialise(o))
+                end
+            }
+        end
+    end
+
+    -- Window layout
+    local win = buildWindow("Order Manager")
+    oWin.main = win.main
+    oWin.content = win.content
+
+    -- List of pending orders
+    oWin.orderList = oWin.content:addList{
+        x = 2,
+        y = 2,
+        width  = "{parent.width-2}",
+        height = "{parent.height-4}",
+        multiSelection = false
+    }
+
+    -- Approve button
+    oWin.approveBtn = oWin.content:addButton{
+        text = "Approve",
+        x = 2,
+        y = "{parent.height-1}",
+        width = 9,
+        height = 1
+    }:onClick(function()
+        local order = oWin.selectedOrder
+        order.status = "approved"
+        redstoneRequester.request(order.items, order.address)
+
+        -- Remove from queue
+        for idx, o in ipairs(oWin.orderQueue) do
+            if o.id == order.id then
+                table.remove(oWin.orderQueue, idx)
+                break
+            end
+        end
+        oWin.selectedOrder = nil -- Clear selection
+
+        oWin.updateUI()
+    end)
+
+    -- Cancel button
+    oWin.cancelBtn = oWin.content:addButton{
+        text = "Cancel",
+        x = 13,
+        y = "{parent.height-1}",
+        width = 9,
+        height = 1
+    }:onClick(function()
+        local idx = oWin.orderList:getSelected()
+        if not idx then return end
+        local order = oWin.orderQueue[idx]
+        order.status = "cancelled"
+        table.remove(oWin.orderQueue, idx)
+        oWin.updateUI()
+    end)
+
+    oWin.main:setWidth(35)
+    oWin.main:setHeight(15)
+
+    return oWin
+end)()
+
 local buttons = {
     Stock = function()
         if Stock.main.visible == true then
@@ -195,6 +287,13 @@ local buttons = {
             return
         end
         Stock.main:setVisible(true)
+    end,
+    Orders = function()
+        if OrderMgr.main.visible == true then
+            OrderMgr.main:setVisible(false)
+            return
+        end
+        OrderMgr.main:setVisible(true)
     end,
 }
 
@@ -217,6 +316,53 @@ basalt.schedule(function()
     while true do
         sleep(1)
         Stock:updateStockList()
+    end
+end)
+
+nextOrderID = 0
+basalt.schedule(function()
+    while true do
+        -- block until a packet arrives
+        local src, msg, proto = rednet.receive()
+
+        if proto ~= SERVICE_NAME then
+            basalt.LOGGER.warn("[Rednet] Unknown proto:", proto)
+            -- skip to next loop iteration (nothing else to do here)
+        else
+            if type(msg) ~= "table" then
+                basalt.LOGGER.error("[Rednet] Bad msg - not a table")
+            else
+                if msg.cmd == "query" then
+                    -- send back the latest snapshot
+                    rednet.send(src, { snapshot = Stock.lastStockSnapshot }, SERVICE_NAME)
+
+                elseif msg.cmd == "order" then
+                    -- validate the order packet
+                    if type(msg.items) ~= "table" or type(msg.address) ~= "string" then
+                        rednet.send(src, { err = "bad format" }, SERVICE_NAME)
+                    else
+                        -- create queue entry
+                        local order = {
+                            id      = nextOrderID,
+                            address = msg.address,
+                            items   = msg.items,
+                            status  = "pending"
+                        }
+                        table.insert(OrderMgr.orderQueue, order)
+                        nextOrderID = nextOrderID + 1
+
+                        basalt.LOGGER.debug("[Order] New order: "..order.id)
+
+                        OrderMgr.updateUI()
+
+                        rednet.send(src, { ok = true, orderId = order.id }, SERVICE_NAME)
+                    end
+
+                else
+                    rednet.send(src, { err = "unknown cmd" }, SERVICE_NAME)
+                end
+            end
+        end
     end
 end)
 
