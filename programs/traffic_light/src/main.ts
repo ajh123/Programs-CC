@@ -1,4 +1,4 @@
-import { drivers, TrafficLight } from "./drivers";
+import { drivers, TrafficLight, LightState } from "./drivers";
 
 
 interface Configuration {
@@ -37,7 +37,7 @@ const configuration = (() => {
 
 function setLaneState(
   laneIndices: number[],
-  state: "clear" | "red" | "red_yellow" | "green" | "yellow"
+  state: LightState
 ) {
     const lightsToUpdate: TrafficLight[] = [];
     for (let i = 0; i < laneIndices.length; i++) {
@@ -45,27 +45,8 @@ function setLaneState(
         lightsToUpdate.push(...lane.lights);
     }
 
-    let fn: (light: TrafficLight) => void;
-    switch (state) {
-        case "clear":
-            fn = (light) => light.clear();
-            break;
-        case "red":
-            fn = (light) => light.setRed();
-            break;
-        case "red_yellow":
-            fn = (light) => light.setRedYellow();
-            break;
-        case "green":
-            fn = (light) => light.setGreen();
-            break;
-        case "yellow":
-            fn = (light) => light.setYellow();
-            break;
-    }
-
     for (let i = 0; i < lightsToUpdate.length; i++) {
-        fn(lightsToUpdate[i]);
+        lightsToUpdate[i].setState(state);
     }
 }
 

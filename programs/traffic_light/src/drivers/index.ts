@@ -1,9 +1,7 @@
+export type LightState = "clear" | "red" | "red_yellow" | "green" | "yellow";
+
 export interface TrafficLight {
-    clear: () => void,
-    setRed: () => void,
-    setRedYellow: () => void,
-    setGreen: () => void,
-    setYellow: () => void,
+    setState: (state: LightState) => void,
 }
 
 export interface TrafficLightDriver {
