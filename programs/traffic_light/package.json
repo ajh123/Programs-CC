@@ -1,0 +1,19 @@
+{
+  "name": "traffic_light",
+  "version": "1.113.1",
+  "description": "A traffic light program for ComputerCraft",
+  "main": "src/main.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tstl"
+  },
+  "devDependencies": {
+    "typescript": "^5.1.0",
+    "@jackmacwindows/lua-types": "^2.13.2",
+    "@jackmacwindows/typescript-to-lua": "^1.22.0",
+    "@jackmacwindows/craftos-types": "^1.1.3",
+    "@jackmacwindows/cc-types": "1.0.1"
+  },
+  "author": "ajh123",
+  "license": "EPL-2.0"
+}
