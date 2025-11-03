@@ -30,39 +30,42 @@ const configuration = (() => {
     }
 })();
 
-function setLaneState(laneIndex: number, state: "clear" | "red" | "red_yellow" | "green" | "yellow") {
-    const lane = configuration.lanes[laneIndex];
-    for (const light of lane.lights) {
-        switch (state) {
-            case "clear":
-                light.clear();
-                break;
-            case "red":
-                light.setRed();
-                break;
-            case "red_yellow":
-                light.setRedYellow();
-                break;
-            case "green":
-                light.setGreen();
-                break;
-            case "yellow":
-                light.setYellow();
-                break;
+function setLaneState(laneIndices: number[], state: "clear" | "red" | "red_yellow" | "green" | "yellow") {
+    for (const laneIndex of laneIndices) {
+        const lane = configuration.lanes[laneIndex];
+        for (const light of lane.lights) {
+            switch (state) {
+                case "clear":
+                    light.clear();
+                    break;
+                case "red":
+                    light.setRed();
+                    break;
+                case "red_yellow":
+                    light.setRedYellow();
+                    break;
+                case "green":
+                    light.setGreen();
+                    break;
+                case "yellow":
+                    light.setYellow();
+                    break;
+            }
         }
     }
 }
 
+const allLaneIndices = configuration.lanes.map((_, index) => index);
 
-setLaneState(0, "clear");
+setLaneState(allLaneIndices, "clear");
 
 while (true) {
-    setLaneState(0, "red");
+    setLaneState(allLaneIndices, "red");
     sleep(1);
-    setLaneState(0, "red_yellow");
+    setLaneState(allLaneIndices, "red_yellow");
     sleep(1);
-    setLaneState(0, "green");
+    setLaneState(allLaneIndices, "green");
     sleep(1);
-    setLaneState(0, "yellow");
+    setLaneState(allLaneIndices, "yellow");
     sleep(1);
 }
