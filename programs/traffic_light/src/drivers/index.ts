@@ -1,11 +1,13 @@
+export interface TrafficLight {
+    clear: () => void,
+    setRed: () => void,
+    setRedYellow: () => void,
+    setGreen: () => void,
+    setYellow: () => void,
+}
+
 export interface TrafficLightDriver {
-    initialise: (config: any) => {
-        clear: () => void,
-        setRed: () => void,
-        setRedYellow: () => void,
-        setGreen: () => void,
-        setYellow: () => void,
-    };
+    initialise: (config: any) => TrafficLight;
 }
 
 export const drivers = {

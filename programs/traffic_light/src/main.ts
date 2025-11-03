@@ -1,15 +1,18 @@
-import { drivers, TrafficLightDriver } from "./drivers";
+import { drivers, TrafficLight } from "./drivers";
+
+
+interface Configuration {
+    lanes: {
+        lights: TrafficLight[];
+    }[];
+}
 
 const configuration = (() => {
     const configuration = dofile("config.lua");
     let lanes = [];
 
     for (const laneConfig of configuration.lanes) {
-        let lane = {
-            lights: []
-        } as { 
-            lights: ReturnType<TrafficLightDriver['initialise']>[]
-        };
+        let lights = [];
 
         for (const lightConfig of laneConfig.lights) {
             const type = lightConfig.type;
@@ -20,38 +23,49 @@ const configuration = (() => {
             }
 
             const light = driver().initialise(lightConfig);
-            lane.lights.push(light);
+            lights.push(light);
         }
-        lanes.push(lane);
+        lanes.push({
+            lights: lights
+        });
     }
 
     return {
         lanes: lanes
-    }
+    } as Configuration;
 })();
 
-function setLaneState(laneIndices: number[], state: "clear" | "red" | "red_yellow" | "green" | "yellow") {
-    for (const laneIndex of laneIndices) {
-        const lane = configuration.lanes[laneIndex];
-        for (const light of lane.lights) {
-            switch (state) {
-                case "clear":
-                    light.clear();
-                    break;
-                case "red":
-                    light.setRed();
-                    break;
-                case "red_yellow":
-                    light.setRedYellow();
-                    break;
-                case "green":
-                    light.setGreen();
-                    break;
-                case "yellow":
-                    light.setYellow();
-                    break;
-            }
-        }
+function setLaneState(
+  laneIndices: number[],
+  state: "clear" | "red" | "red_yellow" | "green" | "yellow"
+) {
+    const lightsToUpdate: TrafficLight[] = [];
+    for (let i = 0; i < laneIndices.length; i++) {
+        const lane = configuration.lanes[laneIndices[i]];
+        lightsToUpdate.push(...lane.lights);
+    }
+
+    let fn: (light: TrafficLight) => void;
+    switch (state) {
+        case "clear":
+            fn = (light) => light.clear();
+            break;
+        case "red":
+            fn = (light) => light.setRed();
+            break;
+        case "red_yellow":
+            fn = (light) => light.setRedYellow();
+            break;
+        case "green":
+            fn = (light) => light.setGreen();
+            break;
+        case "yellow":
+            fn = (light) => light.setYellow();
+            break;
+    }
+
+    for (let i = 0; i < lightsToUpdate.length; i++) {
+        fn(lightsToUpdate[i]);
     }
 }
 
